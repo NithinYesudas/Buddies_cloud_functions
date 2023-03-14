@@ -21,7 +21,7 @@ exports.getFollowingPosts = functions.https.onCall(async (data, context) => {
   const followingPosts = [];
 
   for (const followingId of followingIds) {
-    const postSnapshot = await db.collection('posts').doc(followingId).collection('images').orderBy("createdAt", "desc").get();
+    const postSnapshot = await db.collection('posts').doc(followingId).collection('images').orderBy("createdAt", "desc").get();//fetching the posts in descending order of createdAt
     const posts = postSnapshot.docs.map((doc) => doc.data());
     followingPosts.push(...posts);
   }
@@ -36,14 +36,14 @@ exports.updatePostCount = functions.firestore
   .onCreate(async (snapshot, context) => {
     const userId = context.params.userId;
     const userRef = admin.firestore().collection('users').doc(userId);
-    const userDoc = await userRef.get();
+    const userDoc = await userRef.get();//fetching the user's document
     const postCount = userDoc.data().postCount || 0;
 
-    return userRef.update({
+    return userRef.update({ // updating the post count by incrementing it by one
       postCount: postCount + 1
     });
   });
-exports.updateFollowingCount = functions.firestore
+exports.updateFollowingCount = functions.firestore// for updating the following count when a user follows
   .document('users/{userId}/following/{followingId}')
   .onCreate(async (snapshot, context) => {
     const userId = context.params.userId;
@@ -55,7 +55,7 @@ exports.updateFollowingCount = functions.firestore
       followingCount: followingCount + 1
     });
   });
-exports.updateFollowingCount = functions.firestore
+exports.updateFollowersCount = functions.firestore // for updating the followers count when a user follows
   .document('users/{userId}/followers/{followersId}')
   .onCreate(async (snapshot, context) => {
     const userId = context.params.userId;
@@ -75,13 +75,13 @@ exports.getMutualFollowers = functions.https.onCall(async (data, context) => {
   const followingSnapshot = await admin.firestore().collection('users').doc(currentUserId).collection('following').get();
   const followersSnapshot = await admin.firestore().collection('users').doc(selectedUserId).collection('followers').get();
 
-  const followingIds = followingSnapshot.docs.map((doc) => doc.id);
-  const followerIds = followersSnapshot.docs.map(doc => doc.id);
+  const followingIds = followingSnapshot.docs.map((doc) => doc.id);//map the list of followingId
+  const followerIds = followersSnapshot.docs.map(doc => doc.id);//map the list of followers of the selected user
 
-  const mutualFollowerIds = followingIds.filter(id => followerIds.includes(id));
+  const mutualFollowerIds = followingIds.filter(id => followerIds.includes(id));//filtering out mutual followers
   const usersSnapshot = await admin.firestore().collection('users').where('userId', "in", mutualFollowerIds).get();
 
-  const mutualFollowerNames = usersSnapshot.docs.map(doc =>  ({ imageUrl: doc.data().imageUrl, name: doc.data().name }));
+  const mutualFollowerNames = usersSnapshot.docs.map(doc =>  ({ imageUrl: doc.data().imageUrl, name: doc.data().name }));//mapping the imageUrl and name of mutual followers
 
   return mutualFollowerNames;
 
