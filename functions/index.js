@@ -81,10 +81,24 @@ exports.getMutualFollowers = functions.https.onCall(async (data, context) => {
   const mutualFollowerIds = followingIds.filter(id => followerIds.includes(id));
   const usersSnapshot = await admin.firestore().collection('users').where('userId', "in", mutualFollowerIds).get();
 
-  const mutualFollowerNames = usersSnapshot.docs.map(doc => doc.data().name);
+  const mutualFollowerNames = usersSnapshot.docs.map(doc =>  ({ imageUrl: doc.data().imageUrl, name: doc.data().name }));
 
   return mutualFollowerNames;
 
 
 });
+
+exports.isFollowing = functions.https.onCall(async (data, context)=>{
+  const currentUserId = data.currentUserId;
+  const selectedUserId = data.selectedUserId;
+  const followingSnapshot = await admin.firestore().collection('users').doc(currentUserId).collection('following').where("userId", '==',selectedUserId).get();
+  const followingIds = followingSnapshot.docs.map((doc) => doc.id);
+  if(followingIds.length == 0){
+    return false;
+  }
+  else{
+   return true;
+  }
+
+})
 
