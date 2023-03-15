@@ -6,7 +6,7 @@ const countUpdaters = require('./countUpdaters');
 
 const db = admin.firestore();
 
-exports.decrementFollowersCount = countUpdaters.decrementFollowersCount;
+exports.decrementFollowersCount = countUpdaters.decrementFollowersCount; //adding the functions written in countUpdaters.js file
 exports.decrementFollowingCount = countUpdaters.decrementFollowingCount;
 exports.updateFollowersCount = countUpdaters.updateFollowersCount;
 exports.updateFollowingCount = countUpdaters.updateFollowingCount;
@@ -41,7 +41,7 @@ exports.getFollowingPosts = functions.https.onCall(async (data, context) => {
 
 
 
-exports.getMutualFollowers = functions.https.onCall(async (data, context) => {
+exports.getMutualFollowers = functions.https.onCall(async (data, context) => {//to return the list of mutual followers of the current user and selected user
   const currentUserId = data.currentUserId;
   const selectedUserId = data.selectedUserId;
 
@@ -61,7 +61,7 @@ exports.getMutualFollowers = functions.https.onCall(async (data, context) => {
 
 });
 
-exports.isFollowing = functions.https.onCall(async (data, context) => {
+exports.isFollowing = functions.https.onCall(async (data, context) => {//to return whether the current user follows the selected user.
   const currentUserId = data.currentUserId;
   const selectedUserId = data.selectedUserId;
   const followingSnapshot = await admin.firestore().collection('users').doc(currentUserId).collection('following').where("userId", '==', selectedUserId).get();
