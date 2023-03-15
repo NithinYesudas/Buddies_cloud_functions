@@ -1,8 +1,16 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
+const countUpdaters = require('./countUpdaters');
+
 
 const db = admin.firestore();
+
+exports.decrementFollowersCount = countUpdaters.decrementFollowersCount;
+exports.decrementFollowingCount = countUpdaters.decrementFollowingCount;
+exports.updateFollowersCount = countUpdaters.updateFollowersCount;
+exports.updateFollowingCount = countUpdaters.updateFollowingCount;
+exports.updatePostCount = countUpdaters.updatePostCount;
 
 exports.getFollowingPosts = functions.https.onCall(async (data, context) => {
   // Check if the user is authenticated
@@ -31,42 +39,7 @@ exports.getFollowingPosts = functions.https.onCall(async (data, context) => {
 });
 
 
-exports.updatePostCount = functions.firestore
-  .document('posts/{userId}/images/{imageId}')
-  .onCreate(async (snapshot, context) => {
-    const userId = context.params.userId;
-    const userRef = admin.firestore().collection('users').doc(userId);
-    const userDoc = await userRef.get();//fetching the user's document
-    const postCount = userDoc.data().postCount || 0;
 
-    return userRef.update({ // updating the post count by incrementing it by one
-      postCount: postCount + 1
-    });
-  });
-exports.updateFollowingCount = functions.firestore// for updating the following count when a user follows
-  .document('users/{userId}/following/{followingId}')
-  .onCreate(async (snapshot, context) => {
-    const userId = context.params.userId;
-    const userRef = admin.firestore().collection('users').doc(userId);
-    const userDoc = await userRef.get();
-    const postCount = userDoc.data().followingCount || 0;
-
-    return userRef.update({
-      followingCount: followingCount + 1
-    });
-  });
-exports.updateFollowersCount = functions.firestore // for updating the followers count when a user follows
-  .document('users/{userId}/followers/{followersId}')
-  .onCreate(async (snapshot, context) => {
-    const userId = context.params.userId;
-    const userRef = admin.firestore().collection('users').doc(userId);
-    const userDoc = await userRef.get();
-    const postCount = userDoc.data().followersCount || 0;
-
-    return userRef.update({
-      followersCount: followersCount + 1
-    });
-  });
 
 exports.getMutualFollowers = functions.https.onCall(async (data, context) => {
   const currentUserId = data.currentUserId;
@@ -81,23 +54,23 @@ exports.getMutualFollowers = functions.https.onCall(async (data, context) => {
   const mutualFollowerIds = followingIds.filter(id => followerIds.includes(id));//filtering out mutual followers
   const usersSnapshot = await admin.firestore().collection('users').where('userId', "in", mutualFollowerIds).get();
 
-  const mutualFollowerNames = usersSnapshot.docs.map(doc =>  ({ imageUrl: doc.data().imageUrl, name: doc.data().name }));//mapping the imageUrl and name of mutual followers
+  const mutualFollowerNames = usersSnapshot.docs.map(doc => ({ imageUrl: doc.data().imageUrl, name: doc.data().name }));//mapping the imageUrl and name of mutual followers
 
   return mutualFollowerNames;
 
 
 });
 
-exports.isFollowing = functions.https.onCall(async (data, context)=>{
+exports.isFollowing = functions.https.onCall(async (data, context) => {
   const currentUserId = data.currentUserId;
   const selectedUserId = data.selectedUserId;
-  const followingSnapshot = await admin.firestore().collection('users').doc(currentUserId).collection('following').where("userId", '==',selectedUserId).get();
+  const followingSnapshot = await admin.firestore().collection('users').doc(currentUserId).collection('following').where("userId", '==', selectedUserId).get();
   const followingIds = followingSnapshot.docs.map((doc) => doc.id);
-  if(followingIds.length == 0){
+  if (followingIds.length == 0) {
     return false;
   }
-  else{
-   return true;
+  else {
+    return true;
   }
 
 })
