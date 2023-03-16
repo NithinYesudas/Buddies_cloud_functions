@@ -12,30 +12,32 @@ exports.updatePostCount = functions.firestore
             postCount: postCount + 1
         });
     });
-exports.updateFollowingCount = functions.firestore// for updating the following count when a user follows
+exports.updateFollowingCount = functions.firestore
     .document('users/{userId}/following/{followingId}')
     .onCreate(async (snapshot, context) => {
         const userId = context.params.userId;
         const userRef = admin.firestore().collection('users').doc(userId);
         const userDoc = await userRef.get();
-        const postCount = userDoc.data().followingCount || 0;
+        const followingCount = userDoc.data().followingCount || 0; // Fix typo here
 
         return userRef.update({
             followingCount: followingCount + 1
         });
     });
+
 exports.updateFollowersCount = functions.firestore // for updating the followers count when a user follows
     .document('users/{userId}/followers/{followersId}')
     .onCreate(async (snapshot, context) => {
         const userId = context.params.userId;
         const userRef = admin.firestore().collection('users').doc(userId);
         const userDoc = await userRef.get();
-        const postCount = userDoc.data().followersCount || 0;
+        const followersCount = userDoc.data().followersCount || 0;
 
         return userRef.update({
             followersCount: followersCount + 1
         });
     });
+
 exports.decrementFollowersCount = functions.firestore // for decrementing the followers count when a user unfollows
     .document('users/{userId}/followers/{followersId}')
     .onDelete(async (snapshot, context) => {
@@ -59,4 +61,14 @@ exports.decrementFollowingCount = functions.firestore // for decrementing the fo
         return userRef.update({
             followingCount: followingCount - 1
         });
+    });
+exports.updatePostId = functions.firestore // for updating the postId when a post is made
+    .document('posts/{userId}/images/{postId}')
+    .onCreate((snap, context) => {
+        const postId = snap.id;
+        const userId = context.params.userId;
+
+        const postRef = snap.ref;
+
+        return postRef.update({ postId });
     });

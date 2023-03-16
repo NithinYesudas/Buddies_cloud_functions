@@ -11,6 +11,7 @@ exports.decrementFollowingCount = countUpdaters.decrementFollowingCount;
 exports.updateFollowersCount = countUpdaters.updateFollowersCount;
 exports.updateFollowingCount = countUpdaters.updateFollowingCount;
 exports.updatePostCount = countUpdaters.updatePostCount;
+exports.updatePostId = countUpdaters.updatePostId;
 
 exports.getFollowingPosts = functions.https.onCall(async (data, context) => {
   // Check if the user is authenticated
@@ -74,4 +75,6 @@ exports.isFollowing = functions.https.onCall(async (data, context) => {//to retu
   }
 
 })
+
+
 
