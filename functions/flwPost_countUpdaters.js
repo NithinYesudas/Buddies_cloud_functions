@@ -72,3 +72,4 @@ exports.updatePostId = functions.firestore // for updating the postId when a pos
 
         return postRef.update({ postId });
     });
+

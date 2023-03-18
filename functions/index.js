@@ -1,17 +1,24 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 admin.initializeApp();
-const countUpdaters = require('./countUpdaters');
+const flwPostCountUpdaters = require('./flwPost_countUpdaters');
+const likeCommentCountUpdaters = require('./likeComment_countUpdaters')
 
 
 const db = admin.firestore();
 
-exports.decrementFollowersCount = countUpdaters.decrementFollowersCount; //adding the functions written in countUpdaters.js file
-exports.decrementFollowingCount = countUpdaters.decrementFollowingCount;
-exports.updateFollowersCount = countUpdaters.updateFollowersCount;
-exports.updateFollowingCount = countUpdaters.updateFollowingCount;
-exports.updatePostCount = countUpdaters.updatePostCount;
-exports.updatePostId = countUpdaters.updatePostId;
+exports.decrementFollowersCount = flwPostCountUpdaters.decrementFollowersCount; //adding the functions written in countUpdaters.js file
+exports.decrementFollowingCount = flwPostCountUpdaters.decrementFollowingCount;
+exports.updateFollowersCount = flwPostCountUpdaters.updateFollowersCount;
+exports.updateFollowingCount = flwPostCountUpdaters.updateFollowingCount;
+exports.updatePostCount = flwPostCountUpdaters.updatePostCount;
+exports.updatePostId = flwPostCountUpdaters.updatePostId;
+exports.incrementPostLikesCount = likeCommentCountUpdaters.incrementPostLikesCount;
+exports.decrementPostLikesCount = likeCommentCountUpdaters.decrementPostLikesCount;
+exports.incrementPostCommentsCount = likeCommentCountUpdaters.incrementPostCommentsCount;
+exports.decrementPostCommentsCount = likeCommentCountUpdaters.decrementPostCommentsCount;
+
+
 
 exports.getFollowingPosts = functions.https.onCall(async (data, context) => {
   // Check if the user is authenticated
@@ -30,11 +37,16 @@ exports.getFollowingPosts = functions.https.onCall(async (data, context) => {
   const followingPosts = [];
 
   for (const followingId of followingIds) {
-    const postSnapshot = await db.collection('posts').doc(followingId).collection('images').orderBy("createdAt", "desc").get();//fetching the posts in descending order of createdAt
-    const posts = postSnapshot.docs.map((doc) => doc.data());
-    followingPosts.push(...posts);
+    const postSnapshot = await db.collection('posts').doc(followingId).collection('images').orderBy("createdAt", "desc").get(); //fetching the posts in descending order of createdAt
+    const posts = postSnapshot.docs.map(async (doc) => {
+      const postData = doc.data();
+      const postId = doc.id;
+      const likeSnapshot = await db.collection('posts').doc(followingId).collection('images').doc(postId).collection("likes").where("userId", "==", userId).get();
+      const isLiked = !likeSnapshot.empty;
+      return { ...postData, isLiked:  isLiked };
+    });
+    followingPosts.push(...(await Promise.all(posts)));
   }
-
 
   return followingPosts;
 });
@@ -53,11 +65,17 @@ exports.getMutualFollowers = functions.https.onCall(async (data, context) => {//
   const followerIds = followersSnapshot.docs.map(doc => doc.id);//map the list of followers of the selected user
 
   const mutualFollowerIds = followingIds.filter(id => followerIds.includes(id));//filtering out mutual followers
-  const usersSnapshot = await admin.firestore().collection('users').where('userId', "in", mutualFollowerIds).get();
+  if (mutualFollowerIds.length > 0) {
+    const usersSnapshot = await admin.firestore().collection('users').where('userId', "in", mutualFollowerIds).get();
+    const mutualFollowerNames = usersSnapshot.docs.map(doc => ({ imageUrl: doc.data().imageUrl, name: doc.data().name }));//mapping the imageUrl and name of mutual followers
 
-  const mutualFollowerNames = usersSnapshot.docs.map(doc => ({ imageUrl: doc.data().imageUrl, name: doc.data().name }));//mapping the imageUrl and name of mutual followers
+    return mutualFollowerNames;
 
-  return mutualFollowerNames;
+
+  }
+  else { return []; }
+
+
 
 
 });
@@ -74,6 +92,19 @@ exports.isFollowing = functions.https.onCall(async (data, context) => {//to retu
     return true;
   }
 
+})
+
+exports.isLiked = functions.https.onCall(async (data, context) => {
+  const currentUserId = context.auth.uid;
+  const selectedUserId = data.selectedUserId;
+  const postId = data.postId;
+  const likeSnapshot = await admin.firestore().collection('posts').doc(selectedUserId).collection('images').doc(postId).collection("likes").where("userId", "==", currentUserId).get();
+  if(likeSnapshot.empty){
+    return false;
+  }
+  else{
+    return true;
+  }
 })
 
 
