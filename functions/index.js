@@ -3,6 +3,7 @@ const admin = require('firebase-admin');
 admin.initializeApp();
 const flwPostCountUpdaters = require('./flwPost_countUpdaters');
 const likeCommentCountUpdaters = require('./likeComment_countUpdaters')
+const chats = require("./chats")
 
 
 const db = admin.firestore();
@@ -17,6 +18,7 @@ exports.incrementPostLikesCount = likeCommentCountUpdaters.incrementPostLikesCou
 exports.decrementPostLikesCount = likeCommentCountUpdaters.decrementPostLikesCount;
 exports.incrementPostCommentsCount = likeCommentCountUpdaters.incrementPostCommentsCount;
 exports.decrementPostCommentsCount = likeCommentCountUpdaters.decrementPostCommentsCount;
+exports.createChatMessageMirror = chats.createChatMessageMirror
 
 
 
