@@ -45,7 +45,7 @@ exports.getFollowingPosts = functions.https.onCall(async (data, context) => {
       const postId = doc.id;
       const likeSnapshot = await db.collection('posts').doc(followingId).collection('images').doc(postId).collection("likes").where("userId", "==", userId).get();
       const isLiked = !likeSnapshot.empty;
-      return { ...postData, isLiked:  isLiked };
+      return { ...postData, isLiked: isLiked };
     });
     followingPosts.push(...(await Promise.all(posts)));
   }
@@ -81,6 +81,34 @@ exports.getMutualFollowers = functions.https.onCall(async (data, context) => {//
 
 
 });
+exports.getFollowingStories = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'You must be authenticated to access this resource.');
+  }
+
+  const userId = context.auth.uid;
+
+  // Get the list of users the current user is following
+  const followingSnapshot = await db.collection('users').doc(userId).collection('following').get();
+
+  const followingIds = followingSnapshot.docs.map((doc) => doc.id);
+  const followingStrories = []
+  for (const followingId of followingIds) {
+    const storySnapshot = await db.collection('stories').doc(followingId).collection('images').orderBy("createdAt", "desc").get(); //fetching the posts in descending order of createdAt
+    const stories = storySnapshot.docs.map(async (doc) => {
+      const storyData = doc.data();
+
+
+
+      return { ...storyData };
+    });
+    followingStrories.push(...(await Promise.all(stories)));
+  }
+
+  return followingStrories;
+
+
+})
 
 exports.isFollowing = functions.https.onCall(async (data, context) => {//to return whether the current user follows the selected user.
   const currentUserId = data.currentUserId;
@@ -101,10 +129,10 @@ exports.isLiked = functions.https.onCall(async (data, context) => {
   const selectedUserId = data.selectedUserId;
   const postId = data.postId;
   const likeSnapshot = await admin.firestore().collection('posts').doc(selectedUserId).collection('images').doc(postId).collection("likes").where("userId", "==", currentUserId).get();
-  if(likeSnapshot.empty){
+  if (likeSnapshot.empty) {
     return false;
   }
-  else{
+  else {
     return true;
   }
 })
