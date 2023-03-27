@@ -6,7 +6,8 @@ const admin = require('firebase-admin');
 exports.createChatMessageMirror = functions.firestore
     .document('chats/{currentUserId}/people/{selectedUserId}/messages/{messageId}')
     .onCreate(async (snap, context) => {
-        const currentUserId = context.params.currentUserId;
+        try
+        {const currentUserId = context.params.currentUserId;
         const selectedUserId = context.params.selectedUserId;
         const messageId = context.params.messageId;
         const messageData = snap.data();
@@ -42,5 +43,9 @@ exports.createChatMessageMirror = functions.firestore
 
 
 
-        return null;
+        return null;}
+        catch(error){
+            throw new functions.https.HttpsError('internal', 'Error while mirroring message', error.message);
+
+        }
     });

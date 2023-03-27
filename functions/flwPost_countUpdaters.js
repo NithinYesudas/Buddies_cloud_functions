@@ -3,14 +3,19 @@ const admin = require('firebase-admin');
 exports.updatePostCount = functions.firestore
     .document('posts/{userId}/images/{imageId}')
     .onCreate(async (snapshot, context) => {
-        const userId = context.params.userId;
+        try
+        {const userId = context.params.userId;
         const userRef = admin.firestore().collection('users').doc(userId);
         const userDoc = await userRef.get();//fetching the user's document
         const postCount = userDoc.data().postCount || 0;
 
         return userRef.update({ // updating the post count by incrementing it by one
             postCount: postCount + 1
-        });
+        });}
+        catch(error){
+            throw new functions.https.HttpsError('internal', 'Error updating post count', error.message);
+
+        }
     });
 exports.updateFollowingCount = functions.firestore
     .document('users/{userId}/following/{followingId}')

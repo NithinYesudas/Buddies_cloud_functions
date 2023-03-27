@@ -27,6 +27,8 @@ exports.getFollowingPosts = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'You must be authenticated to access this resource.');
   }
+   
+  try{
 
   const userId = context.auth.uid;
 
@@ -50,33 +52,38 @@ exports.getFollowingPosts = functions.https.onCall(async (data, context) => {
     followingPosts.push(...(await Promise.all(posts)));
   }
 
-  return followingPosts;
-});
-
-
-
-
-exports.getMutualFollowers = functions.https.onCall(async (data, context) => {//to return the list of mutual followers of the current user and selected user
-  const currentUserId = data.currentUserId;
-  const selectedUserId = data.selectedUserId;
-
-  const followingSnapshot = await admin.firestore().collection('users').doc(currentUserId).collection('following').get();
-  const followersSnapshot = await admin.firestore().collection('users').doc(selectedUserId).collection('followers').get();
-
-  const followingIds = followingSnapshot.docs.map((doc) => doc.id);//map the list of followingId
-  const followerIds = followersSnapshot.docs.map(doc => doc.id);//map the list of followers of the selected user
-
-  const mutualFollowerIds = followingIds.filter(id => followerIds.includes(id));//filtering out mutual followers
-  if (mutualFollowerIds.length > 0) {
-    const usersSnapshot = await admin.firestore().collection('users').where('userId', "in", mutualFollowerIds).get();
-    const mutualFollowerNames = usersSnapshot.docs.map(doc => ({ imageUrl: doc.data().imageUrl, name: doc.data().name }));//mapping the imageUrl and name of mutual followers
-
-    return mutualFollowerNames;
-
+  return followingPosts;}
+  catch(error){
+    throw new functions.https.HttpsError('internal', 'Error getting following posts', error.message);
 
   }
-  else { return []; }
+});
+exports.getMutualFollowers = functions.https.onCall(async (data, context) => {//to return the list of mutual followers of the current user and selected user
+  try{const currentUserId = data.currentUserId;
+  const selectedUserId = data.selectedUserId;
+  
+    const followingSnapshot = await admin.firestore().collection('users').doc(currentUserId).collection('following').get();
+    const followersSnapshot = await admin.firestore().collection('users').doc(selectedUserId).collection('followers').get();
+  
+    const followingIds = followingSnapshot.docs.map((doc) => doc.id);//map the list of followingId
+    const followerIds = followersSnapshot.docs.map(doc => doc.id);//map the list of followers of the selected user
+  
+    const mutualFollowerIds = followingIds.filter(id => followerIds.includes(id));//filtering out mutual followers
+    if (mutualFollowerIds.length > 0) {
+      const usersSnapshot = await admin.firestore().collection('users').where('userId', "in", mutualFollowerIds).get();
+      const mutualFollowerNames = usersSnapshot.docs.map(doc => ({ imageUrl: doc.data().imageUrl, name: doc.data().name }));//mapping the imageUrl and name of mutual followers
+  
+      return mutualFollowerNames;
+  
+    }
+    else { return []; }}
+    catch (error) {
+      
+      throw new functions.https.HttpsError('internal', 'Error getting mutual followers', error.message);
+    }
 
+  
+ 
 
 
 
@@ -85,6 +92,8 @@ exports.getFollowingStories = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'You must be authenticated to access this resource.');
   }
+try{
+
 
   const userId = context.auth.uid;
 
@@ -105,13 +114,17 @@ exports.getFollowingStories = functions.https.onCall(async (data, context) => {
     followingStrories.push(...(await Promise.all(stories)));
   }
 
-  return followingStrories;
+  return followingStrories;}
+  catch(error){
+    throw new functions.https.HttpsError('internal', 'Error getting stories', error.message);
+
+  }
 
 
 })
 
 exports.isFollowing = functions.https.onCall(async (data, context) => {//to return whether the current user follows the selected user.
-  const currentUserId = data.currentUserId;
+  try{const currentUserId = data.currentUserId;
   const selectedUserId = data.selectedUserId;
   const followingSnapshot = await admin.firestore().collection('users').doc(currentUserId).collection('following').where("userId", '==', selectedUserId).get();
   const followingIds = followingSnapshot.docs.map((doc) => doc.id);
@@ -121,11 +134,15 @@ exports.isFollowing = functions.https.onCall(async (data, context) => {//to retu
   else {
     return true;
   }
+  }
+  catch(error){
+    throw new functions.https.HttpsError('internal', 'Error getting following status', error.message);
 
+  }
 })
 
 exports.isLiked = functions.https.onCall(async (data, context) => {
-  const currentUserId = context.auth.uid;
+ try {const currentUserId = context.auth.uid;
   const selectedUserId = data.selectedUserId;
   const postId = data.postId;
   const likeSnapshot = await admin.firestore().collection('posts').doc(selectedUserId).collection('images').doc(postId).collection("likes").where("userId", "==", currentUserId).get();
@@ -134,6 +151,10 @@ exports.isLiked = functions.https.onCall(async (data, context) => {
   }
   else {
     return true;
+  }}
+  catch(error){
+    throw new functions.https.HttpsError('internal', 'Error getting like status', error.message);
+
   }
 })
 
